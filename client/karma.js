@@ -151,9 +151,7 @@ var Karma = function(socket, iframe, opener, navigator, location) {
       // so that all the messages are sent.
       // TODO(vojta): can we rather get notification from socket.io?
       if (returnUrl) {
-        setTimeout(function() {
-          location.href = returnUrl;
-        }, (currentTransport === 'websocket' || currentTransport === 'flashsocket') ? 0 : 3000);
+        location.href = returnUrl;
       }
     }, 0);
   };

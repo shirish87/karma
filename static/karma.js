@@ -21,9 +21,8 @@ var Karma = function(socket, iframe, opener, navigator, location) {
   var queryParams = util.parseQueryParams(location.search);
   var browserId = queryParams.id || util.generateId('manual-');
   var returnUrl = queryParams['return_url' + ''] || null;
-  var currentTransport;
 
-  var resultsBufferLimit = 1;
+  var resultsBufferLimit = 50;
   var resultsBuffer = [];
 
   this.VERSION = constant.VERSION;
@@ -112,7 +111,6 @@ var Karma = function(socket, iframe, opener, navigator, location) {
 
   this.stringify = stringify;
 
-
   var clearContext = function() {
     reloadingContext = true;
     navigateContextTo('about:blank');
@@ -122,7 +120,7 @@ var Karma = function(socket, iframe, opener, navigator, location) {
   // we are not going to execute at all
   this.error = function(msg, url, line) {
     hasError = true;
-    socket.emit('error', url ? msg + '\nat ' + url + (line ? ':' + line : '') : msg);
+    socket.emit('karma_error', url ? msg + '\nat ' + url + (line ? ':' + line : '') : msg);
     this.complete();
     return false;
   };
@@ -161,9 +159,7 @@ var Karma = function(socket, iframe, opener, navigator, location) {
       // so that all the messages are sent.
       // TODO(vojta): can we rather get notification from socket.io?
       if (returnUrl) {
-        setTimeout(function() {
-          location.href = returnUrl;
-        }, (currentTransport === 'websocket' || currentTransport === 'flashsocket') ? 0 : 3000);
+        location.href = returnUrl;
       }
     }, 0);
   };
@@ -230,14 +226,9 @@ var Karma = function(socket, iframe, opener, navigator, location) {
 
   // report browser name, id
   socket.on('connect', function() {
-    currentTransport = socket.socket.transport.name;
-
-    // TODO(vojta): make resultsBufferLimit configurable
-    if (currentTransport === 'websocket' || currentTransport === 'flashsocket') {
+    socket.io.engine.on('upgrade', function() {
       resultsBufferLimit = 1;
-    } else {
-      resultsBufferLimit = 50;
-    }
+    });
 
     socket.emit('register', {
       name: navigator.userAgent,
@@ -256,14 +247,13 @@ var util = require('./util');
 var KARMA_URL_ROOT = require('./constants').KARMA_URL_ROOT;
 
 
-// connect socket.io
-// https://github.com/LearnBoost/Socket.IO/wiki/Configuring-Socket.IO
-var socket = io.connect('http://' + location.host, {
-  'reconnection delay': 500,
-  'reconnection limit': 2000,
-  'resource': KARMA_URL_ROOT.substr(1) + 'socket.io',
-  'sync disconnect on unload': true,
-  'max reconnection attempts': Infinity
+// Connect to the server using socket.io http://socket.io
+var socket = io('http://' + location.host, {
+  reconnectionDelay: 500,
+  reconnectionDelayMax: Infinity,
+  timeout: 2000,
+  path: '/' + KARMA_URL_ROOT.substr(1) + 'socket.io',
+  'sync disconnect on unload': true
 });
 
 // instantiate the updater of the view
