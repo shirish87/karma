@@ -75,7 +75,7 @@ describe 'middleware.source_files', ->
 
     response.once 'end', ->
       expect(nextSpy).not.to.have.been.called
-      expect(response._headers['Cache-Control']).to.deep.equal  ['public', 'max-age=31536000']
+      expect(response._headers['Cache-Control']).to.deep.equal  'public, max-age=31536000'
       done()
 
     callHandlerWith '/absolute/src/some.js?df43b8acf136389a8dd989bda397d1c9b4e048be'
@@ -88,7 +88,7 @@ describe 'middleware.source_files', ->
 
     response.once 'end', ->
       expect(nextSpy).not.to.have.been.called
-      expect(response._headers['Cache-Control']).to.deep.equal  ['public', 'max-age=31536000']
+      expect(response._headers['Cache-Control']).to.deep.equal  'public, max-age=31536000'
       done()
 
     callHandlerWith '/base/a.js?df43b8acf136389a8dd989bda397d1c9b4e048be'
